@@ -1,15 +1,15 @@
-# Jarvis Android 0.4 — voz gratuita y local
-Activación experimental con Vosk, sin Picovoice, cuentas, AccessKey ni suscripción.
-Pulsa **Activar escucha de Jarvis**, concede micrófono/notificaciones/superposición y espera la notificación «Escucha activa». Di Jarvis, espera la respuesta y da una orden en español.
-Los modelos inglés (activación) y español (órdenes) se incluyen en APK y se preparan localmente al primer uso. No se escriben audios ni transcripciones en archivos, preferencias o registros. Solo las notas pedidas explícitamente con «recuerda que» se guardan.
-La conexión a internet permanece disponible para funciones futuras, pero la escucha y los comandos se procesan localmente. No se incluye envío de audio, telemetría ni cliente de IA. Gmail y análisis XTB siguen pendientes. La voz hablada solo usa voces españolas de Android que declaran funcionar sin red; si no hay una instalada, utiliza texto.
-Pantalla bloqueada: responde y solicita desbloqueo de Android; PIN/patrón/biometría siguen requiriendo autenticación.
-No arranca sola tras reinicio ni cierre forzado. Puede necesitar ajustes de batería del fabricante y consume batería mientras escucha. Micrófono ocupado, ruido y acento pueden afectar detección. No se ha probado en dispositivo físico.
-La compilación verifica vocabulario Jarvis del modelo, silencio y comandos normalizados. No demuestra precisión acústica o duración de batería.
-Código y modelos Vosk bajo Apache 2.0. Licencias incluidas en assets/licenses.
+# Jarvis Android 0.5 — voz local y conversación con IA
 
-## Llamadas compuestas
-Admite «abre Truecaller e intenta llamar a Carol Carabajo», «abre true cooler y llama a…» y llamadas simples. Selecciona contacto y número en Jarvis, luego abre ACTION_DIAL en Truecaller. No ejecuta ACTION_CALL. Si Truecaller no maneja ese intent, pregunta antes de usar el marcador habitual. Nombres parecidos como Carol/Karol solo se presentan como candidatos para confirmar; no se elige automáticamente. No se ha verificado la integración con la versión de Truecaller instalada en el teléfono del usuario.
+Di «Jarvis»: saluda según la hora de Ecuador y recibe tus consultas. Vosk procesa la voz en el teléfono. Groq o Gemini generan respuestas con contexto de hasta cuatro intercambios, mantenidos solo en memoria. No se envía audio ni se guarda un chat local; cada proveedor procesa el texto bajo sus políticas.
 
-## Motor local de documentos (en desarrollo)
-En la pantalla principal usa «Crear documentos de prueba» o escribe «crea un Excel», «crea un Word» o «prepara una presentación». Genera un archivo básico OOXML (.xlsx, .docx o .pptx) en Descargas/Jarvis, sin internet, y ofrece abrirlo con una aplicación instalada. Estos son ejemplos de prueba: no incluyen aún investigación, diseños elaborados, conexión a Google Workspace ni generación desde contenido libre. Los comandos por voz del servicio en segundo plano todavía no crean documentos: utiliza la pantalla principal para probar esta etapa. No se ha validado todavía la compatibilidad de los archivos con editores reales ni el éxito de GitHub Actions.
+Usa **Conectar IA** para introducir la URL del servidor y el token personal, elegir proveedor y autorizar el envío de texto. Las claves Groq/Gemini solo se configuran en Cloudflare. El token del teléfono está cifrado con Android Keystore. **No se han desplegado ni probado las conexiones con las cuentas reales.**
+
+«Mi presupuesto» informa de la asignación diaria y mensual. La nube bloquea al agotarla y reserva cada intento en una transacción SQLite, sin reintentos ni cambios automáticos de plan. Los límites internos se reparten hasta fin de mes, en hora de Ecuador. La gratuidad requiere cuentas sin facturación de pago habilitada; el código no puede comprobar esa configuración ni asegurar precios futuros. Consulta [cloud/README.md](cloud/README.md).
+
+«Nueva conversación» borra el contexto. «Guardar respuesta en Word» guarda la última redacción en Descargas/Jarvis. «Abreme wasap» y «puedes abrir el WhatsApp» admiten variantes comunes. Las llamadas requieren elegir y confirmar contacto en pantalla y se preparan con ACTION_DIAL. Las acciones de apps/llamadas/archivos con pantalla bloqueada requieren desbloquear Android.
+
+Activa **Activar escucha de Jarvis** una vez, concede micrófono/notificaciones/superposición y espera «Escucha activa». No necesitas tocar un botón para cada consulta. Tras silencio o «terminar» vuelve a esperar la palabra Jarvis. No inicia automáticamente tras reinicio o cierre forzado. Consumo de batería, precisión acústica y Bluetooth requieren prueba física en el Infinix. No elude PIN, patrón ni biometría.
+
+El modelo de nube conversa y prepara texto; no navega ni ejecuta herramientas. Gmail, Google Workspace y análisis XTB siguen pendientes. Los Excel y PowerPoint de prueba siguen siendo ejemplos básicos. Usa una voz española Android sin red para respuestas habladas.
+
+Código/modelos Vosk Apache 2.0; licencias en assets/licenses. Las pruebas automatizadas verifican comandos, presupuestos y respuestas simuladas; no sustituyen pruebas físicas o conexión real.
