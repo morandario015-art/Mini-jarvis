@@ -1,0 +1,8 @@
+name = "jarvis-ai-gateway"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+# Create a KV namespace and replace the placeholder before deployment.
+[[kv_namespaces]]
+binding = "USAGE"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
