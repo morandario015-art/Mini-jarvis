@@ -18,6 +18,11 @@ jobs:
         with:
           gradle-version: '8.9'
       - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Test voice command aliases
+        run: |
+          mkdir -p /tmp/jarvis-tests
+          javac -d /tmp/jarvis-tests app/src/main/java/com/dario/jarvis/Command.java tests/CommandTest.java
+          java -cp /tmp/jarvis-tests com.dario.jarvis.CommandTest
       - run: gradle assembleDebug
       - uses: actions/upload-artifact@v4
         with:
