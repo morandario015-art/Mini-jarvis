@@ -47,6 +47,8 @@ public class WakeService extends Service {
  }
  private void handleCommand(String raw){
   String text=Command.body(raw);
+  if(text.equals("si")||text.equals("sí")||text.contains("dame todo el resumen")){if(!AppInventory.saved(this).isEmpty()){respond(AppInventory.summary(this));return;}}
+  if(AppInventory.isInventoryCommand(text)){int count=AppInventory.refresh(this);respond("Reconocí "+count+" aplicaciones visibles para Jarvis. ¿Quieres el resumen detallado? Di Jarvis y luego sí.");return;}
   if(text.startsWith("abrir "))text="abre "+text.substring(6);
   if(text.startsWith("abre ")){
    String query=Command.appName(text.substring(5));
