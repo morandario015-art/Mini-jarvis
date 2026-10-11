@@ -1,0 +1,3 @@
+Vosk API and mobile models — Alpha Cephei, Apache License 2.0.
+Vosk model small en-us 0.15 and small es 0.42 from https://alphacephei.com/vosk/models
+JNA — Java Native Access contributors, dual LGPL 2.1 / Apache License 2.0; distributed under Apache License 2.0.

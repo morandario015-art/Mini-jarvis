@@ -23,6 +23,11 @@ jobs:
           mkdir -p /tmp/jarvis-tests
           javac -d /tmp/jarvis-tests app/src/main/java/com/dario/jarvis/Command.java tests/CommandTest.java
           java -cp /tmp/jarvis-tests com.dario.jarvis.CommandTest
+      - name: Bundle offline models and verify Jarvis vocabulary
+        run: |
+          python3 scripts/prepare_models.py
+          pip install vosk==0.3.45
+          python3 scripts/check_model.py
       - run: gradle assembleDebug
       - uses: actions/upload-artifact@v4
         with:
