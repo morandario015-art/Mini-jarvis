@@ -32,13 +32,12 @@ public class WakeService extends Service {
  private Notification notification(String text){PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,WakeService.class).setAction("STOP"),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);return new Notification.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.ic_btn_speak_now).setContentTitle("Jarvis · escucha por voz").setContentText(text).setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Detener",stop).build()).build();}
  private void update(String text){if(!destroyed)getSystemService(NotificationManager.class).notify(70,notification(text));}
  private void pause(){handler.removeCallbacksAndMessages(null);if(detector!=null&&!paused){try{detector.stop();paused=true;update("Escuchando tu orden…");}catch(Exception e){fail("No pude pausar el detector.");}}}
- private void resume(){if(destroyed||detector==null||!paused)return;try{detector.start();paused=false;update("Escucha activa. Di Jarvis.");}catch(Exception e){fail("No pude reanudar la escucha. Actívala de nuevo.");}}
+ private void resume(){if(destroyed||detector==null||!paused)return;conversationActive=false;handler.removeCallbacks(endConversation);try{detector.start();paused=false;update("Escucha activa. Di Jarvis.");}catch(Exception e){fail("No pude reanudar la escucha. Actívala de nuevo.");}}
  private void wake(){if(paused||destroyed)return;pause();KeyguardManager lock=(KeyguardManager)getSystemService(KEYGUARD_SERVICE);if(lock.isKeyguardLocked()){update("Te escuché. Desbloquea para dar una orden.");if(voiceReady)voice.speak("Aquí estoy. Desbloquea el teléfono para abrir aplicaciones.",TextToSpeech.QUEUE_FLUSH,null,"locked");else resume();return;}if(voiceReady)voice.speak("Sí, aquí estoy.",TextToSpeech.QUEUE_FLUSH,null,"wake");else listenCommands();}
  private void launchUnlock(){if(destroyed)return;try{startActivity(new Intent(this,UnlockActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP));handler.postDelayed(()->resume(),20000);}catch(Exception e){update("Desbloquea el teléfono y llama a Jarvis de nuevo.");resume();}}
  private void listenCommands(){
   if(destroyed)return;
   conversationActive=true;
-  handler.removeCallbacks(endConversation);
   if(commands==null)commands=new OfflineCommands(this);
   update("Escuchando orden sin abrir Jarvis…");
   commands.start(this::handleCommand, e->{if(conversationActive)afterResponse();else resume();});
