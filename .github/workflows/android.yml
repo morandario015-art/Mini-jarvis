@@ -18,11 +18,17 @@ jobs:
         with:
           gradle-version: '8.9'
       - run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test cloud budget and conversation gateway
+        run: node --test cloud/worker.test.js
       - name: Test voice command aliases
         run: |
           mkdir -p /tmp/jarvis-tests
-          javac -d /tmp/jarvis-tests app/src/main/java/com/dario/jarvis/Command.java tests/CommandTest.java
+          javac -d /tmp/jarvis-tests app/src/main/java/com/dario/jarvis/Command.java app/src/main/java/com/dario/jarvis/AlarmRequest.java tests/CommandTest.java tests/AlarmRequestTest.java
           java -cp /tmp/jarvis-tests com.dario.jarvis.CommandTest
+          java -cp /tmp/jarvis-tests com.dario.jarvis.AlarmRequestTest
       - name: Bundle offline models and verify Jarvis vocabulary
         run: |
           python3 scripts/prepare_models.py
@@ -33,3 +39,4 @@ jobs:
         with:
           name: Jarvis-Android-APK
           path: app/build/outputs/apk/debug/app-debug.apk
+

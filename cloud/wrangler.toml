@@ -2,7 +2,16 @@ name = "jarvis-ai-gateway"
 main = "worker.js"
 compatibility_date = "2026-10-01"
 
-# Create a KV namespace and replace the placeholder before deployment.
-[[kv_namespaces]]
-binding = "USAGE"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+[vars]
+# Set true ONLY after checking the actual provider projects have no paid billing enabled.
+FREE_TIER_CONFIRMED = "false"
+GROQ_MODEL = "openai/gpt-oss-20b"
+GEMINI_MODEL = "gemini-2.5-flash"
+
+[[durable_objects.bindings]]
+name = "USAGE_LEDGER"
+class_name = "UsageLedger"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["UsageLedger"]

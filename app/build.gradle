@@ -1,8 +1,9 @@
 plugins { id 'com.android.application' }
 android { namespace 'com.dario.jarvis'; compileSdk 35
- defaultConfig { applicationId 'com.dario.jarvis'; minSdk 26; targetSdk 35; versionCode 4; versionName '0.4' }
+ defaultConfig { applicationId 'com.dario.jarvis'; minSdk 26; targetSdk 35; versionCode 5; versionName '0.5' }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
 
 dependencies { implementation 'com.alphacephei:vosk-android:0.3.75@aar'
  implementation 'net.java.dev.jna:jna:5.18.1@aar' }
+

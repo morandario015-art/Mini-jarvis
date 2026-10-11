@@ -1,27 +1,49 @@
-# JARVIS — arquitectura híbrida de IA (primera fase)
+# Jarvis 0.5: conversación con Groq y Gemini
 
-## Objetivo
-Android local (voz, inventario, archivos) -> HTTPS Worker autenticado -> Groq o Gemini.
-El Worker **no está desplegado**, ni la aplicación Android conectada todavía.
+Android conserva la activación «Jarvis» y el reconocimiento Vosk en el teléfono. Tras activarlo, responde con un saludo y recibe órdenes; al terminar o pasar un intervalo sin voz vuelve a esperar «Jarvis». La conversación envía **texto** al servidor, no audio. El contexto se mantiene en memoria hasta cuatro intercambios; «nueva conversación» lo borra. No se guarda historial de chat en el servidor ni en el almacenamiento Android. Cada proveedor tiene su propia política: el contenido de Gemini gratuito puede utilizarse para mejorar productos.
 
-## Preparación
-1. Crea cuentas gratuitas de Cloudflare Workers, GroqCloud y Google AI Studio. Confirma en cada consola que sigues en el plan gratuito y sin facturación de pago habilitada.
-2. Instala Wrangler, inicia sesión con `npx wrangler login` y crea KV con `npx wrangler kv namespace create USAGE`. Pon su ID en `wrangler.toml`.
-3. Configura secretos con `npx wrangler secret put GROQ_API_KEY`, `npx wrangler secret put GEMINI_API_KEY` y `npx wrangler secret put JARVIS_ACCESS_TOKEN` (token largo aleatorio).
-4. Despliega con `npx wrangler deploy`. Nunca subas claves a GitHub ni las incrustes en un APK público.
-5. Prueba `GET /budget` con cabecera `Authorization: Bearer TU_TOKEN`; y `POST /chat` con `{"provider":"groq","message":"Hola"}`.
+## Qué implementa esta versión
 
-## Presupuesto conservador inicial (configurable en worker.js)
-Groq: **20 solicitudes/día y 400/mes**. Gemini: **15/día y 300/mes**.
-Son límites **internos de JARVIS**, no cuotas oficiales de proveedores; los límites reales varían por modelo y cuenta. Se corta al alcanzar cualquiera de los dos. El endpoint /budget devuelve uso, advertencia al 80% y sugerencia diaria proporcional al resto del mes. No hay cambio automático a un plan de pago.
+La pantalla inicial se cierra y desaparece de recientes tras activar escucha. No hay burbuja ni permiso de superposición; solo la notificación de servicio exigida por Android. La escucha no puede continuar si se detiene totalmente el servicio. La interrupción de voz usa AudioRecord y cancelación de eco cuando existe; es experimental, no está probada en el dispositivo y no garantiza detectar toda interrupción.
 
-**Importante:** KV no tiene incrementos atómicos; solicitudes concurrentes podrían exceder el contador. Para un bloqueo estricto de cuota en producción usar Durable Objects o D1 con transacciones y límites también en el panel del proveedor. Los contadores contabilizan intentos, incluidos errores, para evitar reintentos sin límite. Las cuotas de tokens/minuto y búsquedas web todavía no se controlan; se usa salida limitada a 750 tokens. El proveedor puede rechazar antes por sus propias cuotas. La zona horaria de presupuestos es UTC.
 
-## Tareas diarias sugeridas
-Con el presupuesto inicial reserva Groq para ~10-13 conversaciones complejas al día y Gemini para ~8-10 documentos o explicaciones; el resto debe ejecutarse localmente. Estas cantidades son **propuestas**, no consumo garantizado. Usa GET /budget antes de asignar trabajo. Prioriza: (1) estudio urgente, (2) documentos, (3) investigación, (4) conversación recreativa.
+- Conversación escrita y hablada, redacción y explicación con el proveedor elegido.
+- Cliente HTTPS autenticado, sin redirecciones ni reintentos automáticos.
+- Token personal cifrado mediante Android Keystore. Las claves de IA viven únicamente como secretos de Cloudflare.
+- Abrir aplicaciones con variantes como «abreme wasap» y «puedes abrir el WhatsApp». Desambiguar varias coincidencias requiere pantalla; el modelo no ejecuta herramientas ni decide contactos.
+- Guardar la última respuesta como Word en Descargas/Jarvis, por petición explícita.
+- «Mi presupuesto» y «cuántas consultas quedan» consultan los contadores sin llamar a Groq/Gemini.
+- Bloqueo de reservas simultáneas mediante SQLite y transacciones de Durable Objects.
 
-## Seguridad y privacidad
-El token personal es una primera capa, no una solución multiusuario. Para distribución pública implementar login por usuario, cuotas por cuenta y autenticación fuerte. No registrar mensajes sensibles. El contenido enviado a Groq/Gemini se procesa bajo sus políticas; revisar privacidad antes de enviar contactos o archivos personales.
+## Gratuidad y presupuesto
 
-## Pendiente
-Conectar el cliente Android con la URL HTTPS del Worker y autenticación segura, persistencia de conversación, motor de herramientas con confirmaciones, búsqueda real con citas, Google Docs/Sheets/Slides OAuth, recordatorios locales, interrupciones de voz, pruebas de APK y pruebas de cuotas. **Este commit no convierte todavía la app en un asistente IA funcional.**
+Los máximos internos siguen siendo Groq 20/día y 400/mes; Gemini 15/día y 300/mes. Ahora el límite diario efectivo reparte el remanente entre los días que faltan, incluyendo hoy. En un mes nuevo de 31 días comienza con 12 consultas/día de Groq y 9 de Gemini. Si un día se usa menos, el reparto posterior se recalcula. No se puede adelantar todo el presupuesto mensual. Los días y meses se calculan con hora de Ecuador, UTC-5. Advertencia al 80 %, bloqueo al agotar la asignación. Los intentos fallidos también cuentan. No hay cambio automático de proveedor o plan.
+
+**Estos límites no verifican facturación ni son cuotas oficiales.** Para evitar cargos, mantener los proyectos de Gemini y Groq y la cuenta Cloudflare en planes gratuitos, sin facturación de pago habilitada. Las cuotas reales, tokens y modelos gratuitos pueden cambiar y ser inferiores; un error detiene el intento. Este código no contrata servicios ni habilita pagos. El indicador FREE_TIER_CONFIRMED es una confirmación manual; no consulta la cuenta de facturación. No usar como garantía de coste en cuentas con facturación habilitada. Tampoco controla consumo de otras aplicaciones que utilicen las mismas claves. Internet móvil puede tener costes según tu operador.
+
+## Activación en las cuentas existentes
+
+La creación de una cuenta no crea automáticamente una clave ni conecta el aplicativo. El código preparado aquí no despliega cambios ni configura secretos en tus cuentas.
+
+1. Verificar en las consolas que los planes son gratuitos y no tienen facturación de pago habilitada. Obtener las claves en GroqCloud y Google AI Studio sin activar pago.
+2. Desde `cloud/`, iniciar sesión en Cloudflare con `npx wrangler login`.
+3. Configurar únicamente en Cloudflare los secretos `GROQ_API_KEY` y `GEMINI_API_KEY` con `npx wrangler secret put NOMBRE`. No compartirlos en chat, GitHub ni APK.
+4. Crear un token aleatorio de al menos 32 caracteres y configurarlo como secreto `JARVIS_ACCESS_TOKEN`. Este es el token que se introduce en el teléfono; no es ninguna clave de los proveedores.
+5. Después de verificar el paso 1, cambiar `FREE_TIER_CONFIRMED` a `"true"` en `wrangler.toml`. Confirmar que los modelos seleccionados siguen disponibles en el nivel gratuito de esos proyectos. No cambia automáticamente de modelo.
+6. Desplegar con `npx wrangler deploy`. Wrangler crea el Durable Object SQLite indicado en la migración; no necesita KV. No borrar ni recrear ese objeto para recuperar cuota. Si se migra una instalación que ya consumió consultas, importar sus contadores antes de habilitar uso; esta versión parte de un gateway todavía no desplegado.
+7. Abrir `GET /health`: devuelve versión 0.5 y configuración general, sin secretos. En el APK: **Conectar IA**, URL HTTPS del Worker, token personal, Groq o Gemini, consentimiento, **Guardar y comprobar**. La prueba consulta `/budget`; no consume una consulta de IA.
+8. Activar escucha y conceder los permisos Android. Probar «Jarvis», esperar saludo, pedir una explicación y luego «hazlo más breve». Probar «mi presupuesto», «abre WhatsApp» y «terminar».
+
+Si el Worker sigue respondiendo Hello World, el aplicativo lo indica. Hasta configurar el servidor y las claves, las funciones locales permanecen disponibles.
+
+## Pruebas y límites pendientes
+
+`node --test cloud/worker.test.js` verifica reparto diario/mensual, cambio de fecha Ecuador, autenticación, bloqueo sin configuración, historial, errores de proveedor y concurrencia con SQLite real. GitHub Actions compila el APK y comprueba alias. Son pruebas con respuestas de IA simuladas: no demuestran conexión real a tus cuentas.
+
+Falta la prueba física de reconocimiento/acento, batería, bloqueo y Bluetooth en el Infinix HOT 60 Pro+. Android puede exigir iniciar la escucha desde la app, activar Accesibilidad para acciones y ajustar batería; no inicia automáticamente tras reinicio/cierre forzado. Usa una voz Android española que funcione sin red. No elude PIN, patrón ni biometría. El modelo ayuda a interpretar consultas, pero el reconocimiento de audio puede cometer errores.
+
+El motor general AppPilot puede examinar etiquetas de controles de la app elegida y solicitar un paso JSON validado (pulsar, escribir o desplazar), volver a examinarla y detenerse tras cinco pasos. Requiere consentimiento específico en Conectar IA y Accesibilidad activada. No envía campos de contraseña ni valores de campos editables. Las etiquetas sí pueden contener datos personales de la app: habilitar solo si se autoriza su procesamiento por el proveedor. No almacena las etiquetas en el servidor. Los clics sensibles requieren confirmación y una pantalla idéntica a la revisada. Pantallas sin controles legibles, controles sin etiquetas, interfaces gráficas especiales y funciones ocultas pueden necesitar integración específica. No es automatización universal garantizada. Cada paso con IA consume una consulta del presupuesto. La descripción de funciones se basa en la pantalla actual, no en conocimiento exhaustivo de todas las apps.
+
+Gmail/Google Docs/Sheets/Slides OAuth, navegación con fuentes y herramientas de servicios externas no están implementados. Los Excel/PowerPoint existentes siguen siendo ejemplos básicos, no documentos generados desde el contenido de una conversación.
+
+Fuentes de implementación consultadas: https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/ ; https://developers.cloudflare.com/durable-objects/platform/pricing/ ; https://ai.google.dev/api/generate-content ; https://ai.google.dev/gemini-api/docs/pricing ; https://console.groq.com/docs/api-reference .
