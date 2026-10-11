@@ -10,3 +10,6 @@ Código y modelos Vosk bajo Apache 2.0. Licencias incluidas en assets/licenses.
 
 ## Llamadas compuestas
 Admite «abre Truecaller e intenta llamar a Carol Carabajo», «abre true cooler y llama a…» y llamadas simples. Selecciona contacto y número en Jarvis, luego abre ACTION_DIAL en Truecaller. No ejecuta ACTION_CALL. Si Truecaller no maneja ese intent, pregunta antes de usar el marcador habitual. Nombres parecidos como Carol/Karol solo se presentan como candidatos para confirmar; no se elige automáticamente. No se ha verificado la integración con la versión de Truecaller instalada en el teléfono del usuario.
+
+## Motor local de documentos (en desarrollo)
+En la pantalla principal usa «Crear documentos de prueba» o escribe «crea un Excel», «crea un Word» o «prepara una presentación». Genera un archivo básico OOXML (.xlsx, .docx o .pptx) en Descargas/Jarvis, sin internet, y ofrece abrirlo con una aplicación instalada. Estos son ejemplos de prueba: no incluyen aún investigación, diseños elaborados, conexión a Google Workspace ni generación desde contenido libre. Los comandos por voz del servicio en segundo plano todavía no crean documentos: utiliza la pantalla principal para probar esta etapa. No se ha validado todavía la compatibilidad de los archivos con editores reales ni el éxito de GitHub Actions.
