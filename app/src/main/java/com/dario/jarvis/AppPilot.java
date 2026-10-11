@@ -27,6 +27,7 @@ public final class AppPilot {
   if(pendingAction!=null){if(text.equals("si")||text.equals("confirmo")){JSONObject action=pendingAction;Screen screen=pendingScreen;pendingAction=null;pendingScreen=null;perform(action,screen,true);return true;}if(text.equals("no")||text.equals("cancelar")){pendingAction=null;if(pendingScreen!=null)pendingScreen.close();pendingScreen=null;reply.accept("Acción cancelada.");return true;}reply.accept("Hay una acción pendiente. Di confirmo o cancelar.");return true;}
   generation++;steps=0;task=raw;run(raw,false);return true;
  }
+ public void leaveTask(){task="";steps=0;generation++;if(pendingScreen!=null)pendingScreen.close();pendingScreen=null;pendingAction=null;}
  private boolean locked(){return ((KeyguardManager)context.getSystemService(Context.KEYGUARD_SERVICE)).isKeyguardLocked();}
  private Screen capture(){
   AppActionsService service=AppActionsService.active();if(service==null||locked())return null;

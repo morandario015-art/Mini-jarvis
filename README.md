@@ -14,4 +14,4 @@ El modelo conversa y prepara texto. Con Accesibilidad y consentimiento adicional
 
 Código/modelos Vosk Apache 2.0; licencias en assets/licenses. Las pruebas automatizadas verifican comandos, presupuestos y respuestas simuladas; no sustituyen pruebas físicas o conexión real.
 
-Sin burbuja ni superposición: al activar escucha se cierra y retira la pantalla de configuración. El servicio y su notificación Android permanecen activos. La interrupción mientras habla es experimental y usa cancelación de eco cuando Android la ofrece; requiere prueba en altavoz/Bluetooth y repetir la orden tras interrumpir.
+Sin burbuja ni superposición: al activar escucha se cierra y retira la pantalla de configuración. El servicio y su notificación Android permanecen activos. La interrupción mientras habla es experimental y usa cancelación de eco cuando Android la ofrece; requiere prueba en altavoz/Bluetooth Puede interrumpirse con «para», «espera» o una frase distinta; si solo detecta la palabra de interrupción, escucha a continuación la nueva orden. La precisión no está comprobada.

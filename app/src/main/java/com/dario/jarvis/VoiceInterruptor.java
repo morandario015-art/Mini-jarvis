@@ -18,7 +18,7 @@ public final class VoiceInterruptor implements AutoCloseable {
  private Model model;private volatile boolean closed;private volatile int generation;
  private volatile AudioRecord audio;private Thread reader;
  public VoiceInterruptor(Context context){StorageService.unpack(context,"model-es","interrupt-model",m->{if(closed)m.close();else model=m;},e->{});}
- public void start(String spoken,Runnable interrupt){
+ public void start(String spoken,java.util.function.Consumer<String> interrupt){
   stop();if(closed||model==null)return;final int token=generation;
   reader=new Thread(()->{
    AudioRecord local=null;AcousticEchoCanceler echo=null;NoiseSuppressor noise=null;
@@ -35,9 +35,9 @@ public final class VoiceInterruptor implements AutoCloseable {
      JSONObject result=new JSONObject(complete?recognizer.getResult():recognizer.getPartialResult());
      String text=Command.clean(result.optString(complete?"text":"partial",""));
      // Ignore likely speaker echo. A direct 'para'/'espera' or a distinct phrase interrupts.
-     boolean command=text.equals("para")||text.equals("espera")||text.equals("silencio")||text.equals("jarvis");
-     if(!text.isEmpty()&&!own.contains(text)&&(command||text.split(" ").length>=2)){
-      main.post(()->{if(!closed&&token==generation){stop();interrupt.run();}});break;
+     boolean command=text.equals("para")||text.equals("espera")||text.equals("silencio")||text.equals("jarvis")||text.startsWith("jarvis para");
+     if(!text.isEmpty()&&!own.contains(text)&&(command||complete&&text.split(" ").length>=2)){
+      main.post(()->{if(!closed&&token==generation){stop();interrupt.accept(text);}});break;
      }
     }
    }catch(Exception ignored){}finally{if(echo!=null)echo.release();if(noise!=null)noise.release();if(local!=null){try{local.stop();}catch(Exception ignored){}local.release();synchronized(this){if(audio==local)audio=null;}}}
