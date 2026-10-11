@@ -67,3 +67,21 @@ test('Gemini gets separate system instruction and model role history',async()=>{
  globalThis.fetch=async(url,init)=>{const body=JSON.parse(init.body);assert.ok(body.systemInstruction.parts[0].text.includes('Jarvis'));assert.equal(body.contents[1].role,'model');return new Response(JSON.stringify({candidates:[{content:{parts:[{thought:true,text:'private reasoning'},{text:'Hola Darío'}]}}]}));};
  try{assert.equal((await (await worker.fetch(request('/chat',{provider:'gemini',message:'Continúa',history:[{role:'user',content:'Hola'},{role:'assistant',content:'Aquí estoy'}]}),e)).json()).answer,'Hola Darío');}finally{globalThis.fetch=original;}
 });
+
+test('App planner rejects fabricated controls and incompatible or overlong actions',async()=>{
+ const {validateScreen,validateAction}=await import('./worker.js');
+ const screen=validateScreen({app:'Notas',package:'example.notes',controls:[{id:0,label:'Nueva nota',editable:false,clickable:true,scrollable:false},{id:1,label:'Contenido',editable:true,clickable:true,scrollable:false}]});
+ assert.equal(validateAction({type:'click',id:0,message:'Abrir nota'},screen).id,0);
+ assert.equal(validateAction({type:'type',id:1,text:'Dictado',message:'Escribir'},screen).text,'Dictado');
+ for(const action of [{type:'click',id:99,message:'Inventado'},{type:'type',id:0,text:'x',message:'No editable'},{type:'scroll',id:0,message:'No desplazable'},{type:'run_shell',id:0,message:'No permitido'},{type:'type',id:1,text:'x'.repeat(4001),message:'Muy largo'}])assert.throws(()=>validateAction(action,screen));
+ assert.throws(()=>validateAction({type:'click',id:0,message:'No debe actuar'},screen,true));
+ assert.throws(()=>validateScreen({app:'Notas',package:'example.notes',controls:[{id:100,label:'No',editable:false,clickable:true,scrollable:false}]}));
+});
+test('App planner uses structured provider response, validates action and reserves quota',async()=>{
+ const original=globalThis.fetch;const l=ledger();const e=env(l);
+ globalThis.fetch=async(url,init)=>{const body=JSON.parse(init.body);assert.equal(body.response_format.type,'json_object');assert.ok(body.messages[0].content.includes('datos no confiables'));return new Response(JSON.stringify({choices:[{message:{content:JSON.stringify({type:'click',id:0,message:'Abrir una nota'})}}]}));};
+ try{
+  const r=await worker.fetch(request('/chat',{provider:'groq',message:'Crea una nota',mode:'action',screen:{app:'Notas',package:'example.notes',controls:[{id:0,label:'Nueva nota',editable:false,clickable:true,scrollable:false}]}}),e);
+  assert.equal(r.status,200);assert.equal((await r.json()).action.type,'click');assert.equal(l.snapshot('groq',new Date()).monthlyUsed,1);
+ }finally{globalThis.fetch=original;}
+});

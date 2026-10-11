@@ -4,6 +4,9 @@ Android conserva la activación «Jarvis» y el reconocimiento Vosk en el teléf
 
 ## Qué implementa esta versión
 
+La pantalla inicial se cierra y desaparece de recientes tras activar escucha. No hay burbuja ni permiso de superposición; solo la notificación de servicio exigida por Android. La escucha no puede continuar si se detiene totalmente el servicio. La interrupción de voz usa AudioRecord y cancelación de eco cuando existe; es experimental, no está probada en el dispositivo y no garantiza detectar toda interrupción.
+
+
 - Conversación escrita y hablada, redacción y explicación con el proveedor elegido.
 - Cliente HTTPS autenticado, sin redirecciones ni reintentos automáticos.
 - Token personal cifrado mediante Android Keystore. Las claves de IA viven únicamente como secretos de Cloudflare.
@@ -37,8 +40,10 @@ Si el Worker sigue respondiendo Hello World, el aplicativo lo indica. Hasta conf
 
 `node --test cloud/worker.test.js` verifica reparto diario/mensual, cambio de fecha Ecuador, autenticación, bloqueo sin configuración, historial, errores de proveedor y concurrencia con SQLite real. GitHub Actions compila el APK y comprueba alias. Son pruebas con respuestas de IA simuladas: no demuestran conexión real a tus cuentas.
 
-Falta la prueba física de reconocimiento/acento, batería, bloqueo y Bluetooth en el Infinix HOT 60 Pro+. Android puede exigir iniciar la escucha desde la app, conceder superposición y ajustar batería; no inicia automáticamente tras reinicio/cierre forzado. Usa una voz Android española que funcione sin red. No elude PIN, patrón ni biometría. El modelo ayuda a interpretar consultas, pero el reconocimiento de audio puede cometer errores.
+Falta la prueba física de reconocimiento/acento, batería, bloqueo y Bluetooth en el Infinix HOT 60 Pro+. Android puede exigir iniciar la escucha desde la app, activar Accesibilidad para acciones y ajustar batería; no inicia automáticamente tras reinicio/cierre forzado. Usa una voz Android española que funcione sin red. No elude PIN, patrón ni biometría. El modelo ayuda a interpretar consultas, pero el reconocimiento de audio puede cometer errores.
 
-La nube solo produce texto: Gmail, Google Docs/Sheets/Slides OAuth, navegación con fuentes y herramientas IA no están implementados. Los Excel/PowerPoint existentes siguen siendo ejemplos básicos, no documentos generados desde el contenido de una conversación.
+El motor general AppPilot puede examinar etiquetas de controles de la app elegida y solicitar un paso JSON validado (pulsar, escribir o desplazar), volver a examinarla y detenerse tras cinco pasos. Requiere consentimiento específico en Conectar IA y Accesibilidad activada. No envía campos de contraseña ni valores de campos editables. Las etiquetas sí pueden contener datos personales de la app: habilitar solo si se autoriza su procesamiento por el proveedor. No almacena las etiquetas en el servidor. Los clics sensibles requieren confirmación y una pantalla idéntica a la revisada. Pantallas sin controles legibles, controles sin etiquetas, interfaces gráficas especiales y funciones ocultas pueden necesitar integración específica. No es automatización universal garantizada. Cada paso con IA consume una consulta del presupuesto. La descripción de funciones se basa en la pantalla actual, no en conocimiento exhaustivo de todas las apps.
+
+Gmail/Google Docs/Sheets/Slides OAuth, navegación con fuentes y herramientas de servicios externas no están implementados. Los Excel/PowerPoint existentes siguen siendo ejemplos básicos, no documentos generados desde el contenido de una conversación.
 
 Fuentes de implementación consultadas: https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/ ; https://developers.cloudflare.com/durable-objects/platform/pricing/ ; https://ai.google.dev/api/generate-content ; https://ai.google.dev/gemini-api/docs/pricing ; https://console.groq.com/docs/api-reference .

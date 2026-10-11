@@ -68,6 +68,7 @@ public final class AppPilot {
   if(id<0||id>=old.nodes.size()){old.close();reply.accept("La IA no identificó un control válido.");return;}
   AccessibilityNodeInfo node=old.nodes.get(id);String label="";try{label=old.json.getJSONArray("controls").getJSONObject(id).optString("label");}catch(Exception ignored){}
   String normalized=Command.clean(label);
+  if(type.equals("click")&&label.trim().isEmpty()){old.close();reply.accept("Ese control no tiene una etiqueta que pueda verificar. No lo pulsaré automáticamente.");return;}
   boolean sensitive=normalized.matches(".*\\b(enviar|send|pagar|pay|comprar|buy|transferir|borrar|delete|eliminar|desinstalar|publicar|publish|confirmar|confirm|aceptar|accept|suscribir|subscribe)\\b.*");
   if(normalized.matches(".*\\b(permitir|allow|conceder|grant)\\b.*")){old.close();reply.accept("Los permisos de Android debes concederlos personalmente.");return;}
   if(!confirmed&&type.equals("click")&&sensitive){pendingAction=action;pendingScreen=old;reply.accept("La tarea pide pulsar "+label+". ¿Lo confirmas? Di confirmo o cancelar.");return;}
