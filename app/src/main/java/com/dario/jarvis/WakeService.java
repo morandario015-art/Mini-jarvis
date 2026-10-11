@@ -16,6 +16,8 @@ public class WakeService extends Service {
  private static WakeService active;
  private OfflineWakeDetector detector;
  private OfflineCommands commands;
+ private boolean conversationActive=false;
+ private final Runnable endConversation=()->{conversationActive=false;if(commands!=null)commands.cancel();resume();};
  private TextToSpeech voice;
  private boolean voiceReady=false,paused=false,destroyed=false;
  private Handler handler;
@@ -25,7 +27,7 @@ public class WakeService extends Service {
  private static final String CHANNEL="jarvis-listening";
  public static void pauseListening(){if(active!=null)active.pause();}
  public static void resumeListening(){if(active!=null)active.resume();}
- public void onCreate(){super.onCreate();active=this;handler=new Handler(getMainLooper());getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel(CHANNEL,"Escucha de Jarvis",NotificationManager.IMPORTANCE_LOW));voice=new TextToSpeech(this,status->{voiceReady=status==TextToSpeech.SUCCESS&&LocalVoice.select(voice);if(voiceReady){voice.setOnUtteranceProgressListener(new UtteranceProgressListener(){public void onStart(String id){}public void onDone(String id){handler.post(()->{if(id.equals("wake"))listenCommands();else if(id.equals("locked"))resume();else resume();});}public void onError(String id){handler.post(()->resume());}});}});}
+ public void onCreate(){super.onCreate();active=this;handler=new Handler(getMainLooper());getSystemService(NotificationManager.class).createNotificationChannel(new NotificationChannel(CHANNEL,"Escucha de Jarvis",NotificationManager.IMPORTANCE_LOW));voice=new TextToSpeech(this,status->{voiceReady=status==TextToSpeech.SUCCESS&&LocalVoice.select(voice);if(voiceReady){voice.setOnUtteranceProgressListener(new UtteranceProgressListener(){public void onStart(String id){}public void onDone(String id){handler.post(()->{if(id.equals("wake"))listenCommands();else if(id.equals("locked"))resume();else afterResponse();});}public void onError(String id){handler.post(()->afterResponse());}});}});}
  public int onStartCommand(Intent intent,int flags,int startId){if(intent!=null&&"STOP".equals(intent.getAction())){stopSelf();return START_NOT_STICKY;}try{Notification n=notification("Iniciando detector…");if(Build.VERSION.SDK_INT>=29)startForeground(70,n,ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE);else startForeground(70,n);if(detector!=null){resume();return START_NOT_STICKY;}detector=new OfflineWakeDetector(this,()->{if(!destroyed&&!paused){try{detector.start();update("Escucha activa. Di Jarvis.");}catch(Exception e){fail("No pude iniciar el micrófono.");}}},()->wake(),e->fail("No pude cargar el detector de voz. Activa la escucha de nuevo."));detector.load();cpu=((PowerManager)getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,"jarvis:listener");cpu.acquire();showBubble();update("Preparando voz local. Espera unos segundos…");getSharedPreferences("wake",0).edit().putString("status","Escucha activa. Di Jarvis.").apply();}catch(Exception e){fail("No se pudo activar el detector ("+e.getClass().getSimpleName()+"). Revisa el permiso del micrófono.");}return START_NOT_STICKY;}
  private Notification notification(String text){PendingIntent open=PendingIntent.getActivity(this,0,new Intent(this,MainActivity.class),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);PendingIntent stop=PendingIntent.getService(this,1,new Intent(this,WakeService.class).setAction("STOP"),PendingIntent.FLAG_IMMUTABLE|PendingIntent.FLAG_UPDATE_CURRENT);return new Notification.Builder(this,CHANNEL).setSmallIcon(android.R.drawable.ic_btn_speak_now).setContentTitle("Jarvis · escucha por voz").setContentText(text).setContentIntent(open).setOngoing(true).addAction(new Notification.Action.Builder(null,"Detener",stop).build()).build();}
  private void update(String text){if(!destroyed)getSystemService(NotificationManager.class).notify(70,notification(text));}
@@ -35,29 +37,39 @@ public class WakeService extends Service {
  private void launchUnlock(){if(destroyed)return;try{startActivity(new Intent(this,UnlockActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_SINGLE_TOP));handler.postDelayed(()->resume(),20000);}catch(Exception e){update("Desbloquea el teléfono y llama a Jarvis de nuevo.");resume();}}
  private void listenCommands(){
   if(destroyed)return;
+  conversationActive=true;
+  handler.removeCallbacks(endConversation);
   if(commands==null)commands=new OfflineCommands(this);
   update("Escuchando orden sin abrir Jarvis…");
-  commands.start(this::handleCommand, e->respond(e));
+  commands.start(this::handleCommand, e->{if(conversationActive)afterResponse();else resume();});
+ }
+ private void afterResponse(){
+  if(destroyed)return;
+  if(!conversationActive){resume();return;}
+  handler.removeCallbacks(endConversation);
+  handler.postDelayed(endConversation,45000);
+  listenCommands();
  }
  private void respond(String message){
   if(destroyed)return;
   update(message);
   if(voiceReady)voice.speak(message,TextToSpeech.QUEUE_FLUSH,null,"answer");
-  else resume();
+  else afterResponse();
  }
  private void handleCommand(String raw){
   String text=Command.body(raw);
   if(text.equals("si")||text.equals("sí")||text.contains("dame todo el resumen")){if(!AppInventory.saved(this).isEmpty()){respond(AppInventory.summary(this));return;}}
   if(AppInventory.isInventoryCommand(text)){int count=AppInventory.refresh(this);respond("Reconocí "+count+" aplicaciones visibles para Jarvis. ¿Quieres el resumen detallado? Di Jarvis y luego sí.");return;}
+  if(text.equals("terminar")||text.equals("adios")||text.equals("deja de escuchar")){conversationActive=false;respond("Conversación terminada.");return;}
   if(text.startsWith("abrir "))text="abre "+text.substring(6);
   if(text.startsWith("abre ")){
-   String query=Command.appName(text.substring(5));
+   String query=Command.canonicalApp(text.substring(5));
    Intent launcher=new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
    List<ResolveInfo> all=getPackageManager().queryIntentActivities(launcher,0);
    ResolveInfo found=null;int count=0;
    for(ResolveInfo item:all){
     String label=Command.clean(item.loadLabel(getPackageManager()).toString());
-    if(label.equals(query)||label.contains(query)){found=item;count++;}
+    if(Command.fuzzyApp(query,label)){found=item;count++;}
    }
    if(count==0){respond("No encontré esa aplicación.");return;}
    if(count>1){respond("Encontré varias aplicaciones parecidas. Abre Jarvis para elegir.");return;}
